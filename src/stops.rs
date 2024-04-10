@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde_json::Error;
 use std::fmt::{self, Debug, Display, Formatter};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Stop {
     parada: usize,
     nombre: String,
@@ -18,6 +18,25 @@ pub struct Stop {
     latitud: Option<f64>,
     #[serde(default)]
     longitud:Option<f64>
+}
+
+impl Stop {
+    pub fn new(parada: usize, nombre: String, nom_web: String, peso: isize, lat: Option<f64>, lon: Option<f64>, latitud: Option<f64>, longitud: Option<f64>) -> Self {
+        Self {
+            parada,
+            nombre,
+            nom_web,
+            peso,
+            lat,
+            lon,
+            latitud,
+            longitud,
+        }
+    }
+
+    pub fn get_parada(&self) -> usize {
+        self.parada
+    }
 }
 
 impl Debug for Stop {
