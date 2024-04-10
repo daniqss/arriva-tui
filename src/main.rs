@@ -3,15 +3,20 @@ mod fetch_data;
 mod stops;
 mod expeditions;
 use error::Error;
-use fetch_data::fetch_data;
+use fetch_data::{fetch_data, PostType};
 use stops::{Stop, deserialize_stops};
-use expeditions::Expedition;
+use expeditions::{Expedition, ExpeditionRequest};
 
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     // Fetch data from from https://arriva.gal/plataforma/api/
-    let stops = match fetch_data("https://arriva.gal/plataforma/api/superparadas/index/buscador.json").await {
+    let stops = match fetch_data(
+            "https://arriva.gal/plataforma/api/superparadas/index/buscador.json",
+            "application/json",
+            r#"{"key":"value"}"#,
+            PostType::BODY
+        ).await {
         Ok(response) => {
             match deserialize_stops(response) {
                 Ok(stops) => stops,
@@ -21,17 +26,24 @@ async fn main() -> Result<(), Error> {
         Err(e) => return Err(e.into()),
     };
 
-    stops.iter().for_each(|stop| {
-        println!("{}", stop);
-    });
-
     let wanted_stops = match get_wanted_stop_from_args(stops) {
         (Some(from_stop), Some(to_stop)) => (from_stop, to_stop),
         _ => return Ok(()),
     };
 
-    let expedition = Expedition::from_stops(wanted_stops, String::from("2021-01-01"));
-    println!("{}", expedition.get_payload());
+    // println!("{:?}", wanted_stops.0);
+
+    let expedition = ExpeditionRequest::from_stops(wanted_stops, String::from("18-04-2024"));
+    let expedition_result = match fetch_data(
+            "https://arriva.es/es/galicia/para-viajar/arriva",
+            "application/x-www-form-urlencoded",
+            "controller=buses&method=goSearch&data%5Bfrom%5D=5274&data%5Bto%5D=5714&data%5Bdate%5D=18-04-2024",
+            PostType::FORM
+        ).await {
+        Ok(response) => response,
+        Err(e) => return Err(e.into()),
+    };
+    println!("{:?}", expedition_result);
 
     Ok(())
 }

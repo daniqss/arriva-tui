@@ -1,9 +1,15 @@
 use crate::stops::Stop;
 
 #[derive(Debug, Clone)]
-pub struct Expedition {
+pub struct ExpeditionRequest {
     from: usize,
     to: usize,
+    date: String,
+}
+
+pub struct Expedition {
+    from: Stop,
+    to: Stop,
     date: String,
 }
 
@@ -11,7 +17,7 @@ pub struct ExpeditionList {
     expeditions: Vec<Expedition>,
 }
 
-impl Expedition {
+impl ExpeditionRequest {
     pub fn new(from: usize, to: usize, date: String) -> Self {
         Self {
             from,
@@ -28,7 +34,7 @@ impl Expedition {
         }
     }
 
-    pub fn get_payload(&self) -> String {
+    pub fn get_payload(self) -> String {
         format!("controller=buses&method=goSearch&data%5Bfrom%5D={}&data%5Bto%5D={}&data%5Bdate%5D={}", self.from, self.to, self.date)
     } 
 }
@@ -39,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_expedition_new() {
-        let expedition = Expedition::new(1, 2, String::from("2021-01-01"));
+        let expedition = ExpeditionRequest::new(1, 2, String::from("2021-01-01"));
         assert_eq!(expedition.from, 1);
         assert_eq!(expedition.to, 2);
         assert_eq!(expedition.date, String::from("2021-01-01"));
@@ -51,7 +57,7 @@ mod tests {
 
         let stop2 = Stop::new(2, String::from("Stop 2"), String::from("Stop 2"), 2, Some(2.0), Some(2.0), Some(2.0), Some(2.0));
 
-        let expedition = Expedition::from_stops((stop1, stop2), String::from("2021-01-01"));
+        let expedition = ExpeditionRequest::from_stops((stop1, stop2), String::from("2021-01-01"));
         assert_eq!(expedition.from, 1);
         assert_eq!(expedition.to, 2);
         assert_eq!(expedition.date, String::from("2021-01-01"));
@@ -59,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_expedition_get_payload() {
-        let expedition = Expedition::new(1, 2, String::from("2021-01-01"));
+        let expedition = ExpeditionRequest::new(1, 2, String::from("2021-01-01"));
         assert_eq!(expedition.get_payload(), "controller=buses&method=goSearch&data%5Bfrom%5D=1&data%5Bto%5D=2&data%5Bdate%5D=2021-01-01");
     }
 }
