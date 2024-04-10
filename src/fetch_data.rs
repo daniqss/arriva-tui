@@ -1,11 +1,9 @@
 use reqwest::Error;
 
 pub async fn fetch_data(endpoint: &str) -> Result<String, Error> {
-    let url = format!("https://arriva.gal/plataforma/api/{}", endpoint);
     let client = reqwest::Client::new();
 
-    println!("Fetching data from: {}", url);
-    let response = client.post(&url)
+    let response = client.post(endpoint)
         .header("Content-Type", "application/json")
         .body(r#"{"key":"value"}"#)
         .send()
