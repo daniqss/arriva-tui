@@ -11,11 +11,17 @@ pub async fn fetch_data(endpoint: &str, content_type: &str, content: &str, post_
     println!("{}", content);
     let request = match post_type {
         PostType::FORM => {
-            let data = match serde_urlencoded::from_str(&content){
-                Ok(data) => data,
-                Err(error) => return Err(error.into())
-            };
-            client.post(endpoint).form(&data)
+            let decoded = urlencoding::decode(content).unwrap();
+
+            // Parse content into a Vec of (&str, &str) that use .form() with urlencoded data
+            let data: Vec<(&str, &str)> = decoded.split('&').map(|pair| {
+                let mut iter = pair.split('=');
+                let key = iter.next().unwrap();
+                let value = iter.next().unwrap();
+                (key, value)
+            }).collect();
+            println!("{:?}", data);
+            client.post(endpoint).header("Content-Type", content_type).form(&data)
         },
         PostType::BODY => client.post(endpoint).header("Content-Type", content_type).body(content.to_string()),
     };

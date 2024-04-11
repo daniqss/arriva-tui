@@ -36,8 +36,8 @@ async fn main() -> Result<(), Error> {
     let expedition = ExpeditionRequest::from_stops(wanted_stops, String::from("18-04-2024"));
     let expedition_result = match fetch_data(
             "https://arriva.es/es/galicia/para-viajar/arriva",
-            "application/x-www-form-urlencoded",
-            "controller=buses&method=goSearch&data%5Bfrom%5D=5274&data%5Bto%5D=5714&data%5Bdate%5D=18-04-2024",
+            "application/x-www-form-urlencoded, charset=UTF-8",
+            "controller=buses&method=goSearch&data%5Bfrom%5D=5274&data%5Bto%5D=4802&data%5Bdate%5D=19-04-2024",
             PostType::FORM
         ).await {
         Ok(response) => response,
