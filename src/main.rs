@@ -1,7 +1,7 @@
 mod fetch_data;
 mod stops;
 mod expeditions;
-use std::error::Error;
+use std::{any::Any, error::Error};
 use serde_json::Value;  
 use fetch_data::fetch_data;
 use stops::{Stop, deserialize_stops};
@@ -37,18 +37,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             &expedition.get_payload(),
         ).await {
         Ok(response) => {
-            // match serde_json::from_str(&response) {
-            //     Ok(parsed) => parsed,
-            //     Err(error) => return Err(error.into()),
-            
-            // };
-            response
+            let parsed: Value = match serde_json::from_str(&response) {
+                Ok(parsed) => parsed,
+                Err(error) => return Err(error.into()),
+            };
+            parsed
         },
         Err(e) => return Err(e.into()),
     };
 
     stops.iter().for_each(|stop| println!("{}", stop));
-    println!("{}", expedition_result);
+    println!("{}", expedition_result["expediciones"]);
 
     Ok(())
 }
