@@ -1,31 +1,17 @@
 use crate::Error;
 
-pub enum PostType {
-    FORM,
-    BODY
-}
-
-pub async fn fetch_data(endpoint: &str, content_type: &str, content: &str, post_type: PostType) -> Result<String, Error> {
+pub async fn fetch_data(endpoint: &str, content_type: &str, content: &str) -> Result<String, Error> {
     let client = reqwest::Client::new();
 
     println!("{}", content);
-    let request = match post_type {
-        PostType::FORM => {
-            let decoded = urlencoding::decode(content).unwrap();
+    let request = client.post(endpoint)
+        .header("Content-Type", content_type)
+        .header("Content-Length", content.len())
+        .header("User-Agent", "curl/8.7.1")
+        .header("Accept", "*/*")
+        .body(content.to_owned());
 
-            // Parse content into a Vec of (&str, &str) that use .form() with urlencoded data
-            let data: Vec<(&str, &str)> = decoded.split('&').map(|pair| {
-                let mut iter = pair.split('=');
-                let key = iter.next().unwrap();
-                let value = iter.next().unwrap();
-                (key, value)
-            }).collect();
-            println!("{:?}", data);
-            client.post(endpoint).header("Content-Type", content_type).form(&data)
-        },
-        PostType::BODY => client.post(endpoint).header("Content-Type", content_type).body(content.to_string()),
-    };
-
+    println!("Request: {:?}", request);
     let response = request.send().await?;
 
 
