@@ -2,6 +2,7 @@ mod fetch_data;
 mod stops;
 mod expeditions;
 use std::error::Error;
+use serde_json::Value;  
 use fetch_data::fetch_data;
 use stops::{Stop, deserialize_stops};
 use expeditions::{Expedition, ExpeditionRequest};
@@ -12,7 +13,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Fetch data from from https://arriva.gal/plataforma/api/
     let stops = match fetch_data(
             "https://arriva.gal/plataforma/api/superparadas/index/buscador.json",
-            "application/json",
+            "application/json; charset=UTF-8",
             r#"{"key":"value"}"#,
         ).await {
         Ok(response) => {
@@ -24,21 +25,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Err(e) => return Err(e.into()),
     };
 
-    let wanted_stops = match get_wanted_stop_from_args(stops) {
+    let wanted_stops = match get_wanted_stop_from_args(stops.clone()) {
         (Some(from_stop), Some(to_stop)) => (from_stop, to_stop),
         _ => return Ok(()),
     };
 
-    let expedition = ExpeditionRequest::from_stops(wanted_stops, String::from("18-04-2024"));
+    let expedition = ExpeditionRequest::from_stops(wanted_stops, String::from("19-04-2024"));
     let expedition_result = match fetch_data(
             "https://arriva.es/es/galicia/para-viajar/arriva",
-            "application/x-www-form-urlencoded, charset=UTF-8",
-            "controller=buses&method=goSearch&data%5Bfrom%5D=5274&data%5Bto%5D=4802&data%5Bdate%5D=19-04-2024",
+            "application/x-www-form-urlencoded; charset=UTF-8",
+            &expedition.get_payload(),
         ).await {
-        Ok(response) => response,
+        Ok(response) => {
+            // match serde_json::from_str(&response) {
+            //     Ok(parsed) => parsed,
+            //     Err(error) => return Err(error.into()),
+            
+            // };
+            response
+        },
         Err(e) => return Err(e.into()),
     };
-    println!("{:?}", expedition_result);
+
+    stops.iter().for_each(|stop| println!("{}", stop));
+    println!("{}", expedition_result);
 
     Ok(())
 }
