@@ -1,4 +1,19 @@
+#![allow(unused)]
 use crate::prelude::*;
+use crossterm::{
+    event::{self, KeyCode, KeyEventKind},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
+    ExecutableCommand,
+};
+use ratatui::{
+    prelude::{CrosstermBackend, Stylize, Terminal},
+    widgets::Paragraph,
+};
+use std::io::stdout;
+
 
 mod error;
 mod prelude;
@@ -11,13 +26,33 @@ use utils::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Fetch data from from https://arriva.gal/plataforma/api/
     let stops = get_stops().await?;
-
     let expeditions = get_expeditions(&stops).await?;
 
-    println!("{} -> {}", stops.0,  stops.1);
-    println!("{}", expeditions["expediciones"]);
+    stdout().execute(EnterAlternateScreen)?;
+    enable_raw_mode()?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    terminal.clear()?;
+
+    loop {
+        terminal.draw(|frame| {
+            let area = frame.size();
+            frame.render_widget(
+                Paragraph::new(format!("{} {}", stops.0.to_string(), stops.1.to_string())).centered(),
+                area,
+            );
+        })?;
+
+        if event::poll(std::time::Duration::from_millis(16))? {
+            if let event::Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press
+                    && key.code == KeyCode::Char('q')
+                {
+                    break;
+                }
+            }
+        }
+    }
 
     Ok(())
 }

@@ -56,11 +56,7 @@ impl Debug for Stop {
 
 impl Display for Stop {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "Parada: {} 
-            \tNombre: {} 
-            \tLatitud: {} 
-            \tLongitud: {} 
-            \n",
+        write!(f,"\nParada: {}\nNombre: {}\nLatitud: {}\nLongitud: {}\n",
             self.parada,
             self.nom_web,
             self.format_option_f64(&self.latitud),
