@@ -88,3 +88,27 @@ pub fn deserialize_stops(response: String) -> Result<Vec<Stop>, Error> {
     let stop_list: StopList = serde_json::from_str(&response)?;
     Ok(stop_list.paradas)
 }
+
+pub fn get_wanted_stop_from_args(stops: Vec<Stop>) -> (Option<Stop>, Option<Stop>) {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() > 1 {
+        match args[1].parse::<usize>() {
+            Ok(from) => {
+                match args[2].parse::<usize>() {
+                    Ok(to) => {
+                        let from_stop = stops.iter().find(|stop| stop.get_parada() == from);
+                        let to_stop = stops.iter().find(|stop| stop.get_parada() == to);
+                        match (from_stop, to_stop) {
+                            (Some(&ref from_stop), Some(&ref to_stop)) => return (Some(from_stop.clone()), Some(to_stop.clone())),
+                            _ => (),
+                        }
+                    },
+                    Err(_) => (),
+                }
+            },
+            Err(_) => (),
+        }
+    }
+    (None, None)
+}

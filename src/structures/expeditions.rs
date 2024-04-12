@@ -26,7 +26,7 @@ impl ExpeditionRequest {
         }
     }
 
-    pub fn from_stops(stops: (Stop, Stop), date: String) -> Self {
+    pub fn from_stops(stops: &(Stop, Stop), date: String) -> Self {
         Self {
             from: stops.0.get_parada(),
             to: stops.1.get_parada(),
@@ -57,7 +57,7 @@ mod tests {
 
         let stop2 = Stop::new(2, String::from("Stop 2"), String::from("Stop 2"), 2, Some(2.0), Some(2.0), Some(2.0), Some(2.0));
 
-        let expedition = ExpeditionRequest::from_stops((stop1, stop2), String::from("2021-01-01"));
+        let expedition = ExpeditionRequest::from_stops(&(stop1, stop2), String::from("2021-01-01"));
         assert_eq!(expedition.from, 1);
         assert_eq!(expedition.to, 2);
         assert_eq!(expedition.date, String::from("2021-01-01"));

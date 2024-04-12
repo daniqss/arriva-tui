@@ -12,6 +12,17 @@ use utils::*;
 #[tokio::main]
 async fn main() -> Result<()> {
     // Fetch data from from https://arriva.gal/plataforma/api/
+    let stops = get_stops().await?;
+
+    let expeditions = get_expeditions(&stops).await?;
+
+    println!("{} -> {}", stops.0,  stops.1);
+    println!("{}", expeditions["expediciones"]);
+
+    Ok(())
+}
+
+async fn get_stops() -> Result<(Stop, Stop)> {
     let stops = match fetch_data(
             "https://arriva.gal/plataforma/api/superparadas/index/buscador.json",
             "application/json; charset=UTF-8",
@@ -26,13 +37,15 @@ async fn main() -> Result<()> {
         Err(e) => return Err(e.into()),
     };
 
-    let wanted_stops = match get_wanted_stop_from_args(stops.clone()) {
-        (Some(from_stop), Some(to_stop)) => (from_stop, to_stop),
-        _ => return Ok(()),
-    };
+    match get_wanted_stop_from_args(stops) {
+        (Some(from_stop), Some(to_stop)) => Ok((from_stop, to_stop)),
+        _ => Err(Error::Generic("Uso: arriva-tui <from: usize> <to: usize> <date: String>".to_string())),
+    }
+}
 
-    let expedition = ExpeditionRequest::from_stops(wanted_stops, String::from("19-04-2024"));
-    let expedition_result = match fetch_data(
+async fn get_expeditions(stops: &(Stop, Stop)) -> Result<Value> {
+    let expedition = ExpeditionRequest::from_stops(stops, String::from("19-04-2024"));
+    match fetch_data(
             "https://arriva.es/es/galicia/para-viajar/arriva",
             "application/x-www-form-urlencoded; charset=UTF-8",
             &expedition.get_payload(),
@@ -42,39 +55,8 @@ async fn main() -> Result<()> {
                 Ok(parsed) => parsed,
                 Err(error) => return Err(error.into()),
             };
-            parsed
+            Ok(parsed)
         },
         Err(e) => return Err(e.into()),
-    };
-
-    stops.iter().for_each(|stop| println!("{}", stop));
-    println!("{}", expedition_result["expediciones"]);
-
-    Ok(())
-}
-
-fn get_wanted_stop_from_args(stops: Vec<stops::Stop>) -> (Option<Stop>, Option<Stop>) {
-    let args: Vec<String> = std::env::args().collect();
-    let invalid_args = format!("Uso: {} <from: usize> <to: usize> <date: String>", args[0]);
-
-    if args.len() > 1 {
-        match args[1].parse::<usize>() {
-            Ok(from) => {
-                match args[2].parse::<usize>() {
-                    Ok(to) => {
-                        let from_stop = stops.iter().find(|stop| stop.get_parada() == from);
-                        let to_stop = stops.iter().find(|stop| stop.get_parada() == to);
-                        match (from_stop, to_stop) {
-                            (Some(&ref from_stop), Some(&ref to_stop)) => return (Some(from_stop.clone()), Some(to_stop.clone())),
-                            _ => println!("Not founded stops"),
-                        }
-                    },
-                    Err(_) => println!("Invalid to stop"),
-                }
-            },
-            Err(_) => println!("Invalid from stop"),
-        }
     }
-    println!("{}", invalid_args);
-    (None, None)
 }
