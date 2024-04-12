@@ -1,6 +1,6 @@
-use std::error::Error;
+use crate::prelude::*;
 
-pub async fn fetch_data(endpoint: &str, content_type: &str, content: &str) -> Result<String, Box<dyn Error>> {
+pub async fn fetch_data(endpoint: &str, content_type: &str, content: &str) -> Result<String> {
     let client = reqwest::Client::new();
 
     let request = client.post(endpoint)
@@ -34,8 +34,8 @@ pub async fn fetch_data(endpoint: &str, content_type: &str, content: &str) -> Re
     }
     else { 
         match response.error_for_status() {
-            Ok(_) => Err(Box::from("Error in response") as Box<dyn Error>),
-            Err(error) => Err(Box::from(error) as Box<dyn Error>)
+            Ok(_) => Err(Error::Generic("hola".to_string())),
+            Err(error) => Err(Error::Reqwest(error))
         }
     }
 }

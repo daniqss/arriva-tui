@@ -1,15 +1,16 @@
-mod fetch_data;
-mod stops;
-mod expeditions;
-use std::{any::Any, error::Error};
-use serde_json::Value;  
-use fetch_data::fetch_data;
-use stops::{Stop, deserialize_stops};
-use expeditions::{Expedition, ExpeditionRequest};
+use crate::prelude::*;
+
+mod error;
+mod prelude;
+mod utils;
+mod structures;
+
+use structures::*;
+use utils::*;
 
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     // Fetch data from from https://arriva.gal/plataforma/api/
     let stops = match fetch_data(
             "https://arriva.gal/plataforma/api/superparadas/index/buscador.json",

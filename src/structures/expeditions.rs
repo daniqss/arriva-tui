@@ -1,4 +1,4 @@
-use crate::stops::Stop;
+use super::stops::Stop;
 
 #[derive(Debug, Clone)]
 pub struct ExpeditionRequest {
