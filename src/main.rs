@@ -1,27 +1,16 @@
 #![allow(unused)]
 use crate::prelude::*;
-use crossterm::{
-    event::{self, KeyCode, KeyEventKind},
-    terminal::{
-        disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
-    ExecutableCommand,
-};
-use ratatui::{
-    prelude::{CrosstermBackend, Stylize, Terminal},
-    widgets::Paragraph,
-};
-use std::io::stdout;
-
+use tokio::io;
 
 mod error;
 mod prelude;
 mod utils;
 mod structures;
+mod app;
 
 use structures::*;
-use utils::*;
+use utils::fetch_data;
+use app::App;
 
 
 #[tokio::main]
@@ -29,32 +18,10 @@ async fn main() -> Result<()> {
     let stops = get_stops().await?;
     let expeditions = get_expeditions(&stops).await?;
 
-    stdout().execute(EnterAlternateScreen)?;
-    enable_raw_mode()?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
-    terminal.clear()?;
-
-    loop {
-        terminal.draw(|frame| {
-            let area = frame.size();
-            frame.render_widget(
-                Paragraph::new(format!("{} {}", stops.0.to_string(), stops.1.to_string())).centered(),
-                area,
-            );
-        })?;
-
-        if event::poll(std::time::Duration::from_millis(16))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && key.code == KeyCode::Char('q')
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    Ok(())
+    let mut terminal = app::init()?;
+    let app_result = App::default().run(&mut terminal);
+    app::restore()?;
+    app_result
 }
 
 async fn get_stops() -> Result<(Stop, Stop)> {
