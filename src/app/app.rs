@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::prelude::*;
 use crate::app::tui::*;
 
@@ -10,11 +12,20 @@ use ratatui::{
 
 #[derive(Debug, Default)]
 pub struct App {
+    stops: Vec<Stop>,
     counter: u8,
     exit: bool,
 }
 
 impl App {
+    pub fn new(stops: Vec<Stop>) -> Self {
+        App {
+            stops,
+            counter: 0,
+            exit: false,
+        }
+    }
+
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut Tui) -> Result<()> {
         while !self.exit {
@@ -41,8 +52,8 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
-            KeyCode::Left => self.decrement_counter(),
-            KeyCode::Right => self.increment_counter(),
+            KeyCode::Up => self.increment_counter(),
+            KeyCode::Down => self.decrement_counter(),
             _ => {}
         }
     }
@@ -55,7 +66,6 @@ impl App {
         if (self.counter != u8::MAX) {
             self.counter += 1;
         }
-        println!("chamba");
     }
 
     fn decrement_counter(&mut self) {
@@ -67,15 +77,17 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Counter App Tutorial ".bold());
-        let instructions = Title::from(Line::from(vec![
+        let title = Title::from(" Arriva Terminal User Interface ".light_blue().bold());
+        let buttons = vec![            
             " Decrement ".into(),
-            "<Left>".blue().bold(),
+            "<Up>".light_blue().bold(),
             " Increment ".into(),
-            "<Right>".blue().bold(),
+            "<Down>".light_blue().bold(),
             " Quit ".into(),
-            "<Q> ".blue().bold(),
-        ]));
+            "<Q> ".light_blue().bold()
+        ];
+        let instructions = Title::from(Line::from(buttons.clone()));
+
         let block = Block::default()
             .title(title.alignment(Alignment::Center))
             .title(

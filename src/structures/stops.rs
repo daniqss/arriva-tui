@@ -37,6 +37,10 @@ impl Stop {
     pub fn get_parada(&self) -> usize {
         self.parada
     }
+
+    pub fn get_nombre(&self) -> String {
+        self.nombre.clone()
+    }
 }
 
 impl Debug for Stop {

@@ -4,7 +4,6 @@ use crossterm::{execute, terminal::*};
 use ratatui::prelude::*;
 use crate::prelude::*;
 
-/// A type alias for the terminal type used in this application
 pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 
 /// Initialize the terminal

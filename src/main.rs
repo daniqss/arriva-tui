@@ -1,6 +1,9 @@
 #![allow(unused)]
 use crate::prelude::*;
-use tokio::io;
+use std::io::Write;
+use async_std::task::sleep;
+use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
+use std::{thread, time::Duration};
 
 mod error;
 mod prelude;
@@ -15,33 +18,44 @@ use app::App;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let stops = get_stops().await?;
-    let expeditions = get_expeditions(&stops).await?;
+    let stops = fetch_initial_data().await?;
 
     let mut terminal = app::init()?;
-    let app_result = App::default().run(&mut terminal);
+    let app_result = App::new(stops).run(&mut terminal);
     app::restore()?;
     app_result
 }
 
-async fn get_stops() -> Result<(Stop, Stop)> {
-    let stops = match fetch_data(
+async fn fetch_initial_data() -> Result<Vec<Stop>> {
+    let mut bufwtr = BufferWriter::stderr(ColorChoice::Always);
+    let mut buffer = bufwtr.buffer();
+    buffer.set_color(ColorSpec::new().set_fg(Some(PRIMARY_COLOR)))?;
+    writeln!(&mut buffer, "Fetching data...")?;
+    bufwtr.print(&buffer)?;
+    buffer.clear();
+    
+    let stops = get_stops().await?;
+
+    writeln!(&mut buffer, "Data fetched successfully!")?;
+    bufwtr.print(&buffer)?;
+    thread::sleep(Duration::from_secs(2));
+
+    Ok(stops)
+}
+
+async fn get_stops() -> Result<Vec<Stop>> {
+    match fetch_data(
             "https://arriva.gal/plataforma/api/superparadas/index/buscador.json",
             "application/json; charset=UTF-8",
             r#"{"key":"value"}"#,
         ).await {
         Ok(response) => {
             match deserialize_stops(response) {
-                Ok(stops) => stops,
+                Ok(stops) => Ok(stops),
                 Err(error) => return Err(error.into()),
             }
         },
         Err(e) => return Err(e.into()),
-    };
-
-    match get_wanted_stop_from_args(stops) {
-        (Some(from_stop), Some(to_stop)) => Ok((from_stop, to_stop)),
-        _ => Err(Error::Generic("Uso: arriva-tui <from: usize> <to: usize> <date: String>".to_string())),
     }
 }
 
