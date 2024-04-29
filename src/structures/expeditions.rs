@@ -7,6 +7,7 @@ pub struct ExpeditionRequest {
     date: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct Expedition {
     from: Stop,
     to: Stop,
