@@ -46,7 +46,7 @@ impl App {
 
     fn render_frame(&self, frame: &mut Frame) {
 
-        let constraints = vec![Constraint::Percentage(50)];
+        let constraints = vec![Constraint::Percentage(50), Constraint::Percentage(50)];
         let chunks = Layout::horizontal(constraints).split(frame.size());
         let title = Title::from(" Arriva Terminal User Interface ".fg(PRIMARY_COLOR_RTT).bold());
         let buttons = vec![            
@@ -66,34 +66,44 @@ impl App {
                 ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))])
             }).collect();
 
-        let stops_list: Vec<ListItem> = self.from_stops.items
+        let from_list: Vec<ListItem> = self.from_stops.items
             .iter()
             .map(|i| {
-                ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))])
+                ListItem::new(text::Line::from(vec![
+                    Span::raw(i.get_parada().to_string()).fg(SECUNDARY_COLOR_RTT),
+                    Span::raw(" - "),
+                    Span::raw(i.get_nombre()).fg(PRIMARY_COLOR_RTT),
+                ]))
+            }).collect();
+        let to_list: Vec<ListItem> = self.to_stops.items
+            .iter()
+            .map(|i| {
+                ListItem::new(text::Line::from(vec![
+                    Span::raw(i.get_parada().to_string()).fg(SECUNDARY_COLOR_RTT),
+                    Span::raw(" - "),
+                    Span::raw(i.get_nombre()).fg(PRIMARY_COLOR_RTT),
+                ]))
             }).collect();
 
-        // let block = Block::default()
-        //     .title(title.alignment(Alignment::Center))
-        //     .title(
-        //         instructions
-        //             .alignment(Alignment::Center)
-        //             .position(Position::Bottom),
-        //     )
-        //     .borders(Borders::ALL)
-        //     .border_set(border::THICK);
 
-            // ...
-
-        let block = List::new(stops_list)
+        let from_block = List::new(from_list)
             .block(Block::default().borders(Borders::ALL).border_set(border::THICK)
                 .title(title.alignment(Alignment::Center))
                 .title(instructions.alignment(Alignment::Center).position(Position::Bottom))
             )
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD).style().fg(PRIMARY_COLOR_RTT))
-            .highlight_symbol("   => ");
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC));
+            // .highlight_symbol("   => ");
 
-        frame.render_stateful_widget(block, chunks[0], &mut self.from_stops.state.clone());
-        // frame.render_widget(block, chunks[1]);
+
+        let to_block = List::new(to_list)
+            .block(Block::default().borders(Borders::NONE).border_set(border::THICK)
+                // .title(title.alignment(Alignment::Center))
+                // .title(instructions.alignment(Alignment::Center).position(Position::Bottom))
+            )
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC));
+            // .highlight_symbol("   => ");
+        frame.render_stateful_widget(from_block, chunks[0], &mut self.from_stops.state.clone());
+        frame.render_stateful_widget(to_block, chunks[1], &mut self.to_stops.state.clone());
 
     }
 
