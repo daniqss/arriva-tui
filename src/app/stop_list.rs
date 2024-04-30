@@ -14,7 +14,10 @@ pub fn handle_events(app: &mut App, code: & KeyCode) {
             
             match app.desired_stops {
                 (None, None) => app.desired_stops.0 = Some(selected_stop.clone()),
-                (Some(_), None) => app.desired_stops.1 = Some(selected_stop.clone()),
+                (Some(_), None) => {
+                    app.desired_stops.1 = Some(selected_stop.clone());
+                    app.ready_for_expeditions = true;
+                },
                 (_) => {}
             }
         }
