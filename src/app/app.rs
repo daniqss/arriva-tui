@@ -45,11 +45,18 @@ impl App {
     }
 
     fn render_frame(&self, frame: &mut Frame) {
-
-        let constraints = vec![Constraint::Percentage(50), Constraint::Percentage(50)];
-        let chunks = Layout::horizontal(constraints).split(frame.size());
+        let main_constraints = vec![Constraint::Percentage(5), Constraint::Percentage(90), Constraint::Percentage(5)];
+        let main_chunks = Layout::vertical(main_constraints).split(frame.size());
         let title = Title::from(" Arriva Terminal User Interface ".fg(PRIMARY_COLOR_RTT).bold());
-        let buttons = vec![            
+        let constraints = vec![
+            Constraint::Percentage(5),
+            Constraint::Percentage(45),
+            Constraint::Percentage(45),
+            Constraint::Percentage(5),
+        ];
+        let chunks = Layout::horizontal(constraints).split(main_chunks[1]);
+
+        let instructions = Title::from(Line::from(vec![            
             " Decrement ".into(),
             "<Up>".fg(PRIMARY_COLOR_RTT).bold(),
             " Increment ".into(),
@@ -58,13 +65,7 @@ impl App {
             "<Q> ".fg(PRIMARY_COLOR_RTT).bold(),
             " Select ".into(),
             "<Enter> ".fg(PRIMARY_COLOR_RTT).bold(),
-        ];
-        let instructions = Title::from(Line::from(buttons.clone()));
-        let from_list: Vec<ListItem> = self.from_stops.items
-            .iter()
-            .map(|i| {
-                ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))])
-            }).collect();
+        ]));
 
         let from_list: Vec<ListItem> = self.from_stops.items
             .iter()
@@ -85,26 +86,39 @@ impl App {
                 ]))
             }).collect();
 
-
+        let title_block = Block::default().borders(Borders::NONE).border_set(border::THICK)
+            .title(title.alignment(Alignment::Center).position(Position::Top));
+            
+        
         let from_block = List::new(from_list)
-            .block(Block::default().borders(Borders::ALL).border_set(border::THICK)
-                .title(title.alignment(Alignment::Center))
-                .title(instructions.alignment(Alignment::Center).position(Position::Bottom))
-            )
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC));
-            // .highlight_symbol("   => ");
-
-
+            .block(Block::default().borders(
+                match self.desired_stops {
+                    (None, None) => Borders::ALL,
+                    (Some(_), None) => Borders::NONE,
+                    _ => Borders::NONE
+                }
+            ).title(Title::from("From: ")))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+            .highlight_symbol("->  ");
+    
         let to_block = List::new(to_list)
-            .block(Block::default().borders(Borders::NONE).border_set(border::THICK)
-                // .title(title.alignment(Alignment::Center))
-                // .title(instructions.alignment(Alignment::Center).position(Position::Bottom))
-            )
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC));
-            // .highlight_symbol("   => ");
-        frame.render_stateful_widget(from_block, chunks[0], &mut self.from_stops.state.clone());
-        frame.render_stateful_widget(to_block, chunks[1], &mut self.to_stops.state.clone());
+            .block(Block::default().borders(
+                match self.desired_stops {
+                    (None, None) => Borders::NONE,
+                    (Some(_), None) => Borders::ALL,
+                    _ => Borders::NONE
+                }
+            ).title(Title::from("To: ")))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+            .highlight_symbol("->  ");
 
+        let instructions_block = Block::default().borders(Borders::NONE).border_set(border::THICK)
+            .title(instructions.alignment(Alignment::Center).position(Position::Bottom));
+
+        frame.render_widget(title_block, main_chunks[0]);
+        frame.render_stateful_widget(from_block, chunks[1], &mut self.from_stops.state.clone());
+        frame.render_stateful_widget(to_block, chunks[2], &mut self.to_stops.state.clone());
+        frame.render_widget(instructions_block, main_chunks[2]);
     }
 
     fn handle_events(&mut self) -> Result<()> {
