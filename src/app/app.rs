@@ -11,6 +11,8 @@ use ratatui::{
     widgets::{block::*, *},
 };
 
+use crate::app::{stop_list, expedition_list};
+
 #[derive(Debug, Default)]
 pub struct StatefulList<T> {
     pub state: ListState,
@@ -67,8 +69,9 @@ impl<T> StatefulList<T> {
 #[derive(Debug, Default)]
 pub struct App {
     pub stops: StatefulList<Stop>,
-    pub desired_stops: Option<(Stop, Stop)>,
+    pub desired_stops: (Option<Stop>, Option<Stop>),
     pub expeditions: Option<Vec<Expedition>>,
+    pub ready_for_expeditions: bool,
     pub exit: bool,
 }
 
@@ -76,8 +79,9 @@ impl App {
     pub fn new(stops: Vec<Stop>) -> Self {
         App {
             stops: StatefulList::with_items(stops),
-            desired_stops: None,
+            desired_stops: (None, None),
             expeditions: None,
+            ready_for_expeditions: false,
             exit: false,
         }
     }
@@ -93,39 +97,46 @@ impl App {
 
     fn render_frame(&self, frame: &mut Frame) {
 
-        let constraints = vec![Constraint::Percentage(100)];
+        let constraints = vec![Constraint::Percentage(50)];
         let chunks = Layout::horizontal(constraints).split(frame.size());
-        let title = Title::from(" Arriva Terminal User Interface ".light_blue().bold());
+        let title = Title::from(" Arriva Terminal User Interface ".fg(PRIMARY_COLOR_RTT).bold());
         let buttons = vec![            
             " Decrement ".into(),
-            "<Up>".light_blue().bold(),
+            "<Up>".fg(PRIMARY_COLOR_RTT).bold(),
             " Increment ".into(),
-            "<Down>".light_blue().bold(),
+            "<Down>".fg(PRIMARY_COLOR_RTT).bold(),
             " Quit ".into(),
-            "<Q> ".light_blue().bold()
+            "<Q> ".fg(PRIMARY_COLOR_RTT).bold(),
+            " Select ".into(),
+            "<Enter> ".fg(PRIMARY_COLOR_RTT).bold(),
         ];
         let instructions = Title::from(Line::from(buttons.clone()));
+        let stops_list: Vec<ListItem> = self.stops.items
+            .iter()
+            .map(|i| {
+                ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))])
+            }).collect();
 
-        let block = Block::default()
-            .title(title.alignment(Alignment::Center))
-            .title(
-                instructions
-                    .alignment(Alignment::Center)
-                    .position(Position::Bottom),
-            )
-            .borders(Borders::ALL)
-            .border_set(border::THICK);
+        // let block = Block::default()
+        //     .title(title.alignment(Alignment::Center))
+        //     .title(
+        //         instructions
+        //             .alignment(Alignment::Center)
+        //             .position(Position::Bottom),
+        //     )
+        //     .borders(Borders::ALL)
+        //     .border_set(border::THICK);
 
             // ...
 
-        let stops_list: Vec<ListItem> = self.stops.items
-            .iter()
-            .map(|i| ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))]))
-            .collect();
         let stops_list = List::new(stops_list)
-            .block(Block::default().borders(Borders::ALL).title("List"))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .highlight_symbol("> ");
+            .block(Block::default().borders(Borders::ALL).border_set(border::THICK)
+                .title(title.alignment(Alignment::Center))
+                .title(instructions.alignment(Alignment::Center).position(Position::Bottom))
+            )
+            
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD).style().fg(PRIMARY_COLOR_RTT))
+            .highlight_symbol("   => ");
             frame.render_stateful_widget(stops_list, chunks[0], &mut self.stops.state.clone());
 
     }
@@ -133,16 +144,35 @@ impl App {
     fn handle_events(&mut self) -> Result<()> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                match key_event.code {
-                    KeyCode::Char('q') => self.exit = true,
-                    KeyCode::Up => self.stops.previous(),
-                    KeyCode::Down => self.stops.next(),
-                    _ => {}
+                // match key_event.code {
+                //     KeyCode::Char('q') => self.exit = true,
+                //     KeyCode::Up => self.stops.previous(),
+                //     KeyCode::Down => self.stops.next(),
+                //     KeyCode::Enter => {
+                //         let selected_stop = self.stops.items.get(self.stops.state.selected().unwrap()).unwrap();
+                //         match self.desired_stops {
+                //             (None, None) => self.desired_stops.0 = Some(selected_stop.clone()),
+                //             (Some(_), None) => self.desired_stops.1 = Some(selected_stop.clone()),
+                //             (_) => {}
+                //         }
+                //     }
+                //     _ => {}
+                // }
+
+                if key_event.code == KeyCode::Char('q') {
+                    self.exit = true;
+                }
+                else if !self.ready_for_expeditions {
+                    stop_list::handle_events(self, &key_event.code)
+                }
+                else {
+                    expedition_list::handle_events(self, &key_event.code)
                 }
             }
             _ => {}
         };
         Ok(())
+        
     }
 }
 

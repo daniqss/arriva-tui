@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
 async fn fetch_initial_data() -> Result<Vec<Stop>> {
     let mut bufwtr = BufferWriter::stderr(ColorChoice::Always);
     let mut buffer = bufwtr.buffer();
-    buffer.set_color(ColorSpec::new().set_fg(Some(PRIMARY_COLOR)))?;
+    buffer.set_color(ColorSpec::new().set_fg(Some(PRIMARY_COLOR_TC)))?;
     writeln!(&mut buffer, "Fetching data...")?;
     bufwtr.print(&buffer)?;
     buffer.clear();
