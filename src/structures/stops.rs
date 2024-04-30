@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde_json::Error;
 use std::fmt::{self, Debug, Display, Formatter};
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, PartialEq)]
 pub struct Stop {
     parada: usize,
     nombre: String,

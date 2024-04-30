@@ -11,66 +11,14 @@ use ratatui::{
     widgets::{block::*, *},
 };
 
-use crate::app::{stop_list, expedition_list};
-
-#[derive(Debug, Default)]
-pub struct StatefulList<T> {
-    pub state: ListState,
-    pub items: Vec<T>,
-}
-
-impl Default for StatefulList<Stop> {
-    fn default() -> Self {
-        Self {
-            state: ListState::default(),
-            items: Vec::new(),
-        }
-    }
-}
-
-impl<T> StatefulList<T> {
-    pub fn with_items(items: Vec<T>) -> Self {
-        Self {
-            state: ListState::default(),
-            items,
-        }
-    }
-
-    pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-}
-
+use super::stateful_list::StatefulList;
 
 #[derive(Debug, Default)]
 pub struct App {
-    pub stops: StatefulList<Stop>,
+    pub from_stops: StatefulList<Stop>,
+    pub to_stops: StatefulList<Stop>,
     pub desired_stops: (Option<Stop>, Option<Stop>),
-    pub expeditions: Option<Vec<Expedition>>,
+    pub expeditions: Option<StatefulList<Expedition>>,
     pub ready_for_expeditions: bool,
     pub exit: bool,
 }
@@ -78,7 +26,8 @@ pub struct App {
 impl App {
     pub fn new(stops: Vec<Stop>) -> Self {
         App {
-            stops: StatefulList::with_items(stops),
+            from_stops: StatefulList::with_items(stops.clone()),
+            to_stops: StatefulList::with_items(stops),
             desired_stops: (None, None),
             expeditions: None,
             ready_for_expeditions: false,
@@ -111,7 +60,13 @@ impl App {
             "<Enter> ".fg(PRIMARY_COLOR_RTT).bold(),
         ];
         let instructions = Title::from(Line::from(buttons.clone()));
-        let stops_list: Vec<ListItem> = self.stops.items
+        let from_list: Vec<ListItem> = self.from_stops.items
+            .iter()
+            .map(|i| {
+                ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))])
+            }).collect();
+
+        let stops_list: Vec<ListItem> = self.from_stops.items
             .iter()
             .map(|i| {
                 ListItem::new(vec![text::Line::from(Span::raw(i.get_nombre()))])
@@ -129,50 +84,63 @@ impl App {
 
             // ...
 
-        let stops_list = List::new(stops_list)
+        let block = List::new(stops_list)
             .block(Block::default().borders(Borders::ALL).border_set(border::THICK)
                 .title(title.alignment(Alignment::Center))
                 .title(instructions.alignment(Alignment::Center).position(Position::Bottom))
             )
-            
             .highlight_style(Style::default().add_modifier(Modifier::BOLD).style().fg(PRIMARY_COLOR_RTT))
             .highlight_symbol("   => ");
-            frame.render_stateful_widget(stops_list, chunks[0], &mut self.stops.state.clone());
+
+        frame.render_stateful_widget(block, chunks[0], &mut self.from_stops.state.clone());
+        // frame.render_widget(block, chunks[1]);
 
     }
 
     fn handle_events(&mut self) -> Result<()> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                // match key_event.code {
-                //     KeyCode::Char('q') => self.exit = true,
-                //     KeyCode::Up => self.stops.previous(),
-                //     KeyCode::Down => self.stops.next(),
-                //     KeyCode::Enter => {
-                //         let selected_stop = self.stops.items.get(self.stops.state.selected().unwrap()).unwrap();
-                //         match self.desired_stops {
-                //             (None, None) => self.desired_stops.0 = Some(selected_stop.clone()),
-                //             (Some(_), None) => self.desired_stops.1 = Some(selected_stop.clone()),
-                //             (_) => {}
-                //         }
-                //     }
-                //     _ => {}
-                // }
-
                 if key_event.code == KeyCode::Char('q') {
                     self.exit = true;
                 }
                 else if !self.ready_for_expeditions {
-                    stop_list::handle_events(self, &key_event.code)
+                    match self.desired_stops {
+                        (None, None) => {
+                            self.desired_stops.0 = match self.from_stops.handle_events(&key_event.code) {
+                                Some(stop) => Some(stop),
+                                None => None,
+                            };
+                        },
+                        (Some(_), None) => {
+                            self.desired_stops.0 = match self.from_stops.handle_events(&key_event.code) {
+                                Some(stop) => Some(stop),
+                                None => None,
+                            };
+                            if self.desired_stops.1 != None {
+                                self.ready_for_expeditions = true;
+                            }
+                        },
+                        _ => {}
+                    }
                 }
                 else {
-                    expedition_list::handle_events(self, &key_event.code)
+                    match self.expeditions {
+                        Some(ref mut expeditions) => {
+                            match expeditions.handle_events(&key_event.code) {
+                                Some(expedition) => {
+                                    // do something with the selected expedition
+                                },
+                                None => {}
+                            }
+                        },
+                        None => {}
+                    }
                 }
             }
             _ => {}
         };
         Ok(())
-        
+
     }
 }
 
