@@ -1,6 +1,6 @@
 use std::vec;
 
-use crate::prelude::*;
+use crate::{get_expeditions, prelude::*};
 use crate::app::tui::*;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -18,7 +18,7 @@ pub struct App {
     pub from_stops: StatefulList<Stop>,
     pub to_stops: StatefulList<Stop>,
     pub desired_stops: (Option<Stop>, Option<Stop>),
-    pub expeditions: Option<StatefulList<Expedition>>,
+    pub expeditions: Option<Value>,
     pub ready_for_expeditions: bool,
     pub exit: bool,
 }
@@ -36,8 +36,17 @@ impl App {
     }
 
     // runs the application's main loop until the user quits
-    pub fn run(&mut self, terminal: &mut Tui) -> Result<()> {
+    pub async fn run(&mut self, terminal: &mut Tui) -> Result<()> {
         while !self.exit {
+            if self.ready_for_expeditions {
+                let from = self.desired_stops.0.clone().unwrap();
+                let to = self.desired_stops.1.clone().unwrap();
+                self.expeditions = match get_expeditions(&(from, to)).await? {
+                    Value::Array(expeditions) => Some(Value::Array(expeditions)),
+                    _ => None,
+                };
+                print!("{:?}", self.expeditions);
+            };
             terminal.draw(|frame| self.render_frame(frame))?;
             self.handle_events()?;
         }
@@ -50,8 +59,9 @@ impl App {
         let title = Title::from(" Arriva Terminal User Interface ".fg(PRIMARY_COLOR_RTT).bold());
         let constraints = vec![
             Constraint::Percentage(5),
-            Constraint::Percentage(45),
-            Constraint::Percentage(45),
+            Constraint::Percentage(44),
+            Constraint::Percentage(2),
+            Constraint::Percentage(44),
             Constraint::Percentage(5),
         ];
         let chunks = Layout::horizontal(constraints).split(main_chunks[1]);
@@ -67,57 +77,57 @@ impl App {
             "<Enter> ".fg(PRIMARY_COLOR_RTT).bold(),
         ]));
 
-        let from_list: Vec<ListItem> = self.from_stops.items
-            .iter()
-            .map(|i| {
-                ListItem::new(text::Line::from(vec![
-                    Span::raw(i.get_parada().to_string()).fg(SECUNDARY_COLOR_RTT),
-                    Span::raw(" - "),
-                    Span::raw(i.get_nombre()).fg(PRIMARY_COLOR_RTT),
-                ]))
-            }).collect();
-        let to_list: Vec<ListItem> = self.to_stops.items
-            .iter()
-            .map(|i| {
-                ListItem::new(text::Line::from(vec![
-                    Span::raw(i.get_parada().to_string()).fg(SECUNDARY_COLOR_RTT),
-                    Span::raw(" - "),
-                    Span::raw(i.get_nombre()).fg(PRIMARY_COLOR_RTT),
-                ]))
-            }).collect();
-
         let title_block = Block::default().borders(Borders::NONE).border_set(border::THICK)
-            .title(title.alignment(Alignment::Center).position(Position::Top));
-            
-        
-        let from_block = List::new(from_list)
-            .block(Block::default().borders(
-                match self.desired_stops {
-                    (None, None) => Borders::ALL,
-                    (Some(_), None) => Borders::NONE,
-                    _ => Borders::NONE
-                }
-            ).title(Title::from("From: ")))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-            .highlight_symbol("->  ");
+        .title(title.alignment(Alignment::Center).position(Position::Top));
     
-        let to_block = List::new(to_list)
-            .block(Block::default().borders(
-                match self.desired_stops {
-                    (None, None) => Borders::NONE,
-                    (Some(_), None) => Borders::ALL,
-                    _ => Borders::NONE
-                }
-            ).title(Title::from("To: ")))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-            .highlight_symbol("->  ");
-
         let instructions_block = Block::default().borders(Borders::NONE).border_set(border::THICK)
-            .title(instructions.alignment(Alignment::Center).position(Position::Bottom));
+        .title(instructions.alignment(Alignment::Center).position(Position::Bottom));
+    
+    frame.render_widget(title_block, main_chunks[0]);
+        if (!self.ready_for_expeditions) {
+            let from_list: Vec<ListItem> = self.from_stops.items
+                .iter()
+                .map(|i| {
+                    ListItem::new(text::Line::from(vec![
+                        Span::raw(i.get_parada().to_string()).fg(SECUNDARY_COLOR_RTT),
+                        Span::raw(" - "),
+                        Span::raw(i.get_nombre()).fg(PRIMARY_COLOR_RTT),
+                    ]))
+                }).collect();
+            let to_list: Vec<ListItem> = self.to_stops.items
+                .iter()
+                .map(|i| {
+                    ListItem::new(text::Line::from(vec![
+                        Span::raw(i.get_parada().to_string()).fg(SECUNDARY_COLOR_RTT),
+                        Span::raw(" - "),
+                        Span::raw(i.get_nombre()).fg(PRIMARY_COLOR_RTT),
+                    ]))
+                }).collect();
+            let from_block = List::new(from_list)
+                .block(Block::default().borders(
+                    match self.desired_stops {
+                        (None, None) => Borders::ALL,
+                        (Some(_), None) => Borders::NONE,
+                        _ => Borders::NONE
+                    }
+                ).title(Title::from("From: ")))
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+                .highlight_symbol("->  ");
 
-        frame.render_widget(title_block, main_chunks[0]);
-        frame.render_stateful_widget(from_block, chunks[1], &mut self.from_stops.state.clone());
-        frame.render_stateful_widget(to_block, chunks[2], &mut self.to_stops.state.clone());
+            let to_block = List::new(to_list)
+            .block(Block::default().borders(
+                    match self.desired_stops {
+                        (None, None) => Borders::NONE,
+                        (Some(_), None) => Borders::ALL,
+                        _ => Borders::NONE
+                    }
+                ).title(Title::from("To: ")))
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+                .highlight_symbol("->  ");
+
+            frame.render_stateful_widget(from_block, chunks[1], &mut self.from_stops.state.clone());
+            frame.render_stateful_widget(to_block, chunks[3], &mut self.to_stops.state.clone());
+        } else {}
         frame.render_widget(instructions_block, main_chunks[2]);
     }
 
@@ -136,7 +146,7 @@ impl App {
                             };
                         },
                         (Some(_), None) => {
-                            self.desired_stops.0 = match self.from_stops.handle_events(&key_event.code) {
+                            self.desired_stops.1 = match self.to_stops.handle_events(&key_event.code) {
                                 Some(stop) => Some(stop),
                                 None => None,
                             };
@@ -150,12 +160,6 @@ impl App {
                 else {
                     match self.expeditions {
                         Some(ref mut expeditions) => {
-                            match expeditions.handle_events(&key_event.code) {
-                                Some(expedition) => {
-                                    // do something with the selected expedition
-                                },
-                                None => {}
-                            }
                         },
                         None => {}
                     }

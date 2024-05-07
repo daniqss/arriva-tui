@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
     let stops = fetch_initial_data().await?;
 
     let mut terminal = app::init()?;
-    let app_result = App::new(stops).run(&mut terminal);
+    let app_result = App::new(stops).run(&mut terminal).await;
     app::restore()?;
     app_result
 }
