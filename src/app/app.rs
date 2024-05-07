@@ -1,6 +1,6 @@
 use std::vec;
 
-use crate::{get_expeditions, prelude::*};
+use crate::{fetch_initial_data, get_expeditions, prelude::*};
 use crate::app::tui::*;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -44,9 +44,8 @@ impl App {
                 self.expeditions = match get_expeditions(&(from, to)).await? {
                     Value::Array(expeditions) => Some(Value::Array(expeditions)),
                     _ => None,
-                };
-                print!("{:?}", self.expeditions);
-            };
+                }
+            }
             terminal.draw(|frame| self.render_frame(frame))?;
             self.handle_events()?;
         }
@@ -127,7 +126,31 @@ impl App {
 
             frame.render_stateful_widget(from_block, chunks[1], &mut self.from_stops.state.clone());
             frame.render_stateful_widget(to_block, chunks[3], &mut self.to_stops.state.clone());
-        } else {}
+        } else {
+            if self.expeditions != None {
+                let expeditions = self.expeditions.clone().unwrap();
+                let expeditions_list: Vec<ListItem> = expeditions
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|i| {
+                        ListItem::new(text::Line::from(vec![
+                            Span::raw(i.get("linea").unwrap().as_str().unwrap()).fg(PRIMARY_COLOR_RTT),
+                            Span::raw(" - "),
+                            Span::raw(i.get("hora").unwrap().as_str().unwrap()).fg(SECUNDARY_COLOR_RTT),
+                        ]))
+                    }).collect();
+                let expeditions_block = List::new(expeditions_list)
+                    .block(Block::default().borders(Borders::ALL).title(Title::from("Expeditions: ")))
+                    .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+                    .highlight_symbol("->  ");
+                frame.render_widget(expeditions_block, main_chunks[1]);
+            }
+            else {
+                let expeditions_block = Block::default().borders(Borders::ALL).title(Title::from("Expeditions: "));
+                frame.render_widget(expeditions_block, main_chunks[1]);
+            }
+        }
         frame.render_widget(instructions_block, main_chunks[2]);
     }
 

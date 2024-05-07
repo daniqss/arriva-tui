@@ -1,6 +1,6 @@
 use std::io::{self, stdout, Stdout};
 
-use crossterm::{execute, terminal::*};
+use crossterm::{execute, terminal::{self, *}};
 use ratatui::prelude::*;
 use crate::prelude::*;
 
@@ -8,10 +8,10 @@ pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 
 /// Initialize the terminal
 pub fn init() -> Result<Tui> {
-    print!("{}[2J", 27 as char);
     execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
-    Ok(Terminal::new(CrosstermBackend::new(stdout()))?)
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    Ok(terminal)
 }
 
 /// Restore the terminal to its original state
