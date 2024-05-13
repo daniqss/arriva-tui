@@ -83,3 +83,67 @@ async fn get_expeditions(stops: &(Stop, Stop)) -> Result<Value> {
         Err(e) => return Err(e.into()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_get_stops() {
+        let stop_1 = Stop::new(
+            5274,
+            "Estación de Coruña (A CORUÑA)".to_string(), 
+            "Estación de Coruña".to_string(),
+            516,
+            Some(43.3531),
+            Some(-8.4053),
+            Some(43.3531),
+            Some(-8.4053),
+        );
+
+        let stops = match get_stops().await {
+            Ok(stops) => {
+                // println!("Stops: {:?}", stops);
+                stops
+            },
+            Err(err) => panic!("Error fetching stops: \n {:?}", err),
+        };
+
+        assert_eq!(stops[0], stop_1);
+    }
+
+    #[tokio::test]
+    async fn test_get_expeditions() {
+        let stop_1 = Stop::new(
+            5274,
+            "Estación de Coruña (A CORUÑA)".to_string(), 
+            "Estación de Coruña".to_string(),
+            516,
+            Some(43.3531),
+            Some(-8.4053),
+            Some(43.3531),
+            Some(-8.4053),
+        );
+
+        let stop_2 = Stop::new(
+            5714,
+            "Laracha (LARACHA)".to_string(), 
+            "Laracha".to_string(),
+            121,
+            Some(43.2492),
+            Some(-8.5872),
+            Some(43.2492),
+            Some(-8.5872),
+        );
+
+        let expeditions: Value = match get_expeditions(&(stop_1, stop_2)).await {
+            Ok(expeditions) => {
+                println!("Expeditions: {:?}", expeditions);
+                expeditions
+            },
+            Err(err) => panic!("Error fetching expeditions: \n {:?}", err),
+        };
+
+        // assert_eq!(expeditions["expediciones"].as_array().unwrap().len(), 1);
+    }
+}
