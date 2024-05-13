@@ -66,7 +66,7 @@ async fn get_stops() -> Result<Vec<Stop>> {
     }
 }
 
-async fn get_expeditions(stops: &(Stop, Stop)) -> Result<Value> {
+async fn get_expeditions(stops: (&Stop, &Stop)) -> Result<Value> {
     let expedition = ExpeditionRequest::from_stops(stops, String::from("08-05-2024"));
     match fetch_data(
             "https://arriva.es/es/galicia/para-viajar/arriva",
@@ -136,7 +136,7 @@ mod tests {
             Some(-8.5872),
         );
 
-        let expeditions: Value = match get_expeditions(&(stop_1, stop_2)).await {
+        let expeditions: Value = match get_expeditions((&stop_1, &stop_2)).await {
             Ok(expeditions) => {
                 println!("Expeditions: {:?}", expeditions);
                 expeditions
