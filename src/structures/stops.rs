@@ -45,7 +45,7 @@ impl Stop {
 
 impl Debug for Stop {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "Stop: {} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{}",
+        write!(f, "\nStop: {} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{}",
             self.parada,
             self.nombre,
             self.nom_web,
