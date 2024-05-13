@@ -41,7 +41,7 @@ impl App {
             if self.ready_for_expeditions {
                 let from = self.desired_stops.0.clone().unwrap();
                 let to = self.desired_stops.1.clone().unwrap();
-                self.expeditions = match get_expeditions((&from, &to)).await? {
+                self.expeditions = match get_expeditions((&from, &to), None).await? {
                     Value::Array(expeditions) => Some(Value::Array(expeditions)),
                     _ => None,
                 }

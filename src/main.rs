@@ -5,6 +5,7 @@ use async_std::task::sleep;
 use crossterm::terminal;
 use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
 use std::{thread, time::Duration, io::Stdout};
+use chrono::prelude::Local;
 use ratatui::{backend::CrosstermBackend, prelude::buffer::Buffer, Terminal};
 
 mod error;
@@ -66,12 +67,18 @@ async fn get_stops() -> Result<Vec<Stop>> {
     }
 }
 
-async fn get_expeditions(stops: (&Stop, &Stop)) -> Result<Value> {
-    let expedition = ExpeditionRequest::from_stops(stops, String::from("08-05-2024"));
+async fn get_expeditions(stops: (&Stop, &Stop), date: Option<String>) -> Result<Value> {
+
+    let date = match date {
+        Some(date) => date,
+        None => Local::now().format("%d-%m-%Y").to_string(),
+    };
+
+    let expedition_req = ExpeditionRequest::from_stops(stops, date);
     match fetch_data(
             "https://arriva.es/es/galicia/para-viajar/arriva",
             "application/x-www-form-urlencoded; charset=UTF-8",
-            &expedition.get_payload(),
+            &expedition_req.get_payload(),
         ).await {
         Ok(response) => {
             let parsed: Value = match serde_json::from_str(&response) {
@@ -136,14 +143,20 @@ mod tests {
             Some(-8.5872),
         );
 
-        let expeditions: Value = match get_expeditions((&stop_1, &stop_2)).await {
+        let date = Local::now().format("%d-%m-%Y").to_string();
+
+        let expeditions_value: Value = match get_expeditions((&stop_1, &stop_2), Some(date)).await {
             Ok(expeditions) => {
-                println!("Expeditions: {:?}", expeditions);
                 expeditions
             },
             Err(err) => panic!("Error fetching expeditions: \n {:?}", err),
         };
 
-        // assert_eq!(expeditions["expediciones"].as_array().unwrap().len(), 1);
+        let expeditions: (Vec<Expedition>, Vec<Expedition>) = match deserialize_expeditions(expeditions_value) {
+            Ok(expeditions) => expeditions,
+            Err(err) => panic!("Error deserializing expeditions: \n {:?}", err),
+        };
+
+        // println!("Expeditions: {:?}", expeditions_value["expediciones"]["ida"][0]);
     }
 }
