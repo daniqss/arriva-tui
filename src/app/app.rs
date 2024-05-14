@@ -64,11 +64,11 @@ impl App {
         let main_chunks = Layout::vertical(main_constraints).split(frame.size());
         let title = Title::from(" Arriva Terminal User Interface ".fg(PRIMARY_COLOR_RTT).bold());
         let constraints = vec![
-            Constraint::Percentage(5),
-            Constraint::Percentage(44),
-            Constraint::Percentage(2),
-            Constraint::Percentage(44),
-            Constraint::Percentage(5),
+            Constraint::Percentage(3),
+            Constraint::Percentage(47),
+            Constraint::Percentage(0),
+            Constraint::Percentage(47),
+            Constraint::Percentage(3),
         ];
         let chunks = Layout::horizontal(constraints).split(main_chunks[1]);
 
@@ -135,48 +135,63 @@ impl App {
             frame.render_stateful_widget(to_block, chunks[3], &mut self.to_stops.state.clone());
         } else {
             if let Some((outward_list, return_list)) = &self.expeditions {
-                let outward_list: Vec<ListItem> = outward_list
-                    .items
-                    .iter()
-                    .map(|i| {
-                        ListItem::new(text::Line::from(vec![
-                            Span::raw(i.get_name()).fg(PRIMARY_COLOR_RTT),
-                            Span::raw(" - "),
-                            Span::raw(i.get_departure()).fg(SECUNDARY_COLOR_RTT),
-                            Span::raw(" -> "),
-                            Span::raw(i.get_arrival()).fg(SECUNDARY_COLOR_RTT),
-                            Span::raw(" - "),
-                            Span::raw(i.get_cost()).fg(PRIMARY_COLOR_RTT),
-                        ]))
-                    }).collect();
-        
-                let return_list: Vec<ListItem> = return_list
-                    .items
-                    .iter()
-                    .map(|i| {
-                        ListItem::new(text::Line::from(vec![
-                            Span::raw(i.get_name()).fg(PRIMARY_COLOR_RTT),
-                            Span::raw(" - "),
-                            Span::raw(i.get_departure()).fg(SECUNDARY_COLOR_RTT),
-                            Span::raw(" -> "),
-                            Span::raw(i.get_arrival()).fg(SECUNDARY_COLOR_RTT),
-                            Span::raw(" - "),
-                            Span::raw(i.get_cost()).fg(PRIMARY_COLOR_RTT),
-                        ]))
-                    }).collect();
-                    
-                let outward_block = List::new(outward_list)
-                    .block(Block::default().borders(Borders::ALL).title(Title::from("Outward Expeditions: ")))
-                    .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-                    .highlight_symbol("->  ");
-    
-                let return_block = List::new(return_list)
-                    .block(Block::default().borders(Borders::ALL).title(Title::from("Return Expeditions: ")))
-                    .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-                    .highlight_symbol("->  ");
-    
-                frame.render_stateful_widget(outward_block, chunks[1], &mut self.expeditions.as_ref().unwrap().0.state.clone());
-                frame.render_stateful_widget(return_block, chunks[3], &mut self.expeditions.as_ref().unwrap().1.state.clone());
+                let outward_rows = outward_list.items.iter().map(|i| {
+                    Row::new(vec![
+                        Cell::from(i.get_name()).style(Style::default().fg(PRIMARY_COLOR_RTT).add_modifier(style::Modifier::BOLD)),
+                        Cell::from(i.get_departure()).style(Style::default().fg(SECUNDARY_COLOR_RTT).add_modifier(style::Modifier::ITALIC)),
+                        Cell::from(i.get_arrival()).style(Style::default().fg(SECUNDARY_COLOR_RTT).add_modifier(style::Modifier::ITALIC)),
+                        Cell::from(i.get_cost()).style(Style::default().fg(PRIMARY_COLOR_RTT).add_modifier(style::Modifier::ITALIC)),
+                    ])
+                });
+                
+                let return_rows = return_list.items.iter().map(|i| {
+                    Row::new(vec![
+                        Cell::from(i.get_name()).style(Style::default().fg(PRIMARY_COLOR_RTT).add_modifier(style::Modifier::BOLD)),
+                        Cell::from(i.get_departure()).style(Style::default().fg(SECUNDARY_COLOR_RTT).add_modifier(style::Modifier::ITALIC)),
+                        Cell::from(i.get_arrival()).style(Style::default().fg(SECUNDARY_COLOR_RTT).add_modifier(style::Modifier::ITALIC)),
+                        Cell::from(i.get_cost()).style(Style::default().fg(PRIMARY_COLOR_RTT).add_modifier(style::Modifier::ITALIC)),
+                    ])
+                });
+                
+                let widths = [
+                    Constraint::Percentage(55),
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(15),
+                ];
+
+                // Creamos las tablas con las filas correspondientes
+                let outward_table = Table::new(outward_rows, widths)
+                    .block(Block::default().borders(Borders::ALL).title(
+                        Span::raw("IDA").style(Style::default().fg(PRIMARY_COLOR_RTT).add_modifier(style::Modifier::BOLD))
+                    ))
+                    .header(Row::new(vec!["LINEA, SALIDA, CHEGADA, COSTE(€)"])
+                        .style(Style::default().fg(Color::Black).add_modifier(style::Modifier::BOLD))
+                    )
+                    .widths(&[
+                        Constraint::Percentage(55),
+                        Constraint::Percentage(15),
+                        Constraint::Percentage(15),
+                        Constraint::Percentage(15),
+                    ]);
+                
+                let return_table = Table::new(return_rows, widths)
+                    .block(Block::default().borders(Borders::ALL).title(
+                        Span::raw("VOLTA").style(Style::default().fg(PRIMARY_COLOR_RTT).add_modifier(style::Modifier::BOLD))
+                    ))
+                    .header(Row::new(vec!["LINEA, SALIDA, CHEGADA, COSTE(€)"])
+                        .style(Style::default().fg(Color::Black).add_modifier(style::Modifier::BOLD))
+                    )
+                    .widths(&[
+                        Constraint::Percentage(55),
+                        Constraint::Percentage(15),
+                        Constraint::Percentage(15),
+                        Constraint::Percentage(15),
+                    ]);
+                
+                // Renderizamos las tablas en el frame
+                frame.render_widget(outward_table, chunks[1]);
+                frame.render_widget(return_table, chunks[3]);
             }
         }
         frame.render_widget(instructions_block, main_chunks[2]);
