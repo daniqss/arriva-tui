@@ -1,3 +1,5 @@
+use std::path::Display;
+
 use serde_json::Value;
 use super::stops::Stop;
 use crate::prelude::*;
@@ -39,11 +41,11 @@ pub struct Expedition {
     name: String,
     departure: String,
     arrival: String,
-    cost: usize,
+    cost: u64,
 }
 
 impl Expedition {
-    pub fn new(name: String, departure: String, arrival: String, cost: usize) -> Self {
+    pub fn new(name: String, departure: String, arrival: String, cost: u64) -> Self {
         Self {
             name,
             departure,
@@ -61,8 +63,14 @@ impl Expedition {
         let arrival_value = expedition_value["hora_llegada"].as_str()
             .ok_or_else(|| Error::Generic("Failed to get arrival value".to_string()))?.to_string();
         let cost = expedition_value["tarifa_basica"].as_u64()
-            .ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))? as usize;     
-    
+            .ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?;     
+        
+        println!("{} != {} != {} != {}", cost,
+            expedition_value["tarifa_basica"].as_i64().ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?,
+            expedition_value["tarifa_basica"].as_u64().ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?,
+            expedition_value["tarifa_basica"].as_f64().ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?
+        );
+
         // Hora_Salida and Hora_Llegada are in the format "YYYY-MM-DDTHH:MM:00+02:00"
         // and we want to extract "HH:MM"
 
@@ -85,7 +93,12 @@ impl std::fmt::Debug for Expedition {
 
 impl std::fmt::Display for Expedition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\nLínea:     {}\nHorario:   {} -> {}\nCoste(€):  {}", self.name, self.departure, self.arrival, self.cost)
+        write!(f, "\nLínea:     {}\nHorario:   {} -> {}\nCoste(€):  {:.2}",
+            self.name,
+            self.departure,
+            self.arrival,
+            self.cost as f64 / 100.0
+        )
     }
 }
 
