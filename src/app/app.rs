@@ -18,7 +18,7 @@ pub struct App {
     pub from_stops: StatefulList<Stop>,
     pub to_stops: StatefulList<Stop>,
     pub desired_stops: (Option<Stop>, Option<Stop>),
-    pub expeditions: Option<Value>,
+    pub expeditions: Option<(StatefulList<Expedition>, StatefulList<Expedition>)>,
     pub ready_for_expeditions: bool,
     pub exit: bool,
 }
@@ -41,10 +41,19 @@ impl App {
             if self.ready_for_expeditions {
                 let from = self.desired_stops.0.clone().unwrap();
                 let to = self.desired_stops.1.clone().unwrap();
-                self.expeditions = match get_expeditions((&from, &to), None).await? {
-                    Value::Array(expeditions) => Some(Value::Array(expeditions)),
-                    _ => None,
-                }
+                let expeditions_value: Value = match get_expeditions((&from, &to), None).await {
+                    Ok(expeditions) => {
+                        expeditions
+                    },
+                    Err(err) => panic!("Error fetching expeditions: \n {:?}", err),
+                };
+        
+                let expeditions_vecs: (Vec<Expedition>, Vec<Expedition>) = match deserialize_expeditions(expeditions_value) {
+                    Ok(expeditions) => expeditions,
+                    Err(err) => panic!("Error deserializing expeditions: \n {:?}", err),
+                };
+
+                self.expeditions = Some((StatefulList::with_items(expeditions_vecs.0), StatefulList::with_items(expeditions_vecs.1)));
             }
             terminal.draw(|frame| self.render_frame(frame))?;
             self.handle_events()?;
@@ -127,29 +136,49 @@ impl App {
             frame.render_stateful_widget(from_block, chunks[1], &mut self.from_stops.state.clone());
             frame.render_stateful_widget(to_block, chunks[3], &mut self.to_stops.state.clone());
         } else {
-            if self.expeditions != None {
-                let expeditions = self.expeditions.clone().unwrap();
-                let expeditions_list: Vec<ListItem> = expeditions
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|i| {
-                        ListItem::new(text::Line::from(vec![
-                            Span::raw(i.get("linea").unwrap().as_str().unwrap()).fg(PRIMARY_COLOR_RTT),
-                            Span::raw(" - "),
-                            Span::raw(i.get("hora").unwrap().as_str().unwrap()).fg(SECUNDARY_COLOR_RTT),
-                        ]))
-                    }).collect();
-                let expeditions_block = List::new(expeditions_list)
-                    .block(Block::default().borders(Borders::ALL).title(Title::from("Expeditions: ")))
-                    .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-                    .highlight_symbol("->  ");
-                frame.render_widget(expeditions_block, main_chunks[1]);
-            }
-            else {
-                let expeditions_block = Block::default().borders(Borders::ALL).title(Title::from("Expeditions: "));
-                frame.render_widget(expeditions_block, main_chunks[1]);
-            }
+            let outward_vec = self.expeditions.as_ref().unwrap().0.items.clone();
+            let return_vec = self.expeditions.as_ref().unwrap().1.items.clone();
+
+            let outward_list: Vec<ListItem> = outward_vec
+                .iter()
+                .map(|i| {
+                    ListItem::new(text::Line::from(vec![
+                        Span::raw(i.get_name()).fg(PRIMARY_COLOR_RTT),
+                        Span::raw(" - "),
+                        Span::raw(i.get_departure()).fg(SECUNDARY_COLOR_RTT),
+                        Span::raw(" -> "),
+                        Span::raw(i.get_arrival()).fg(SECUNDARY_COLOR_RTT),
+                        Span::raw(" - "),
+                        Span::raw(i.get_cost()).fg(PRIMARY_COLOR_RTT),
+                    ]))
+                }).collect();
+
+            let return_list: Vec<ListItem> = return_vec
+                .iter()
+                .map(|i| {
+                    ListItem::new(text::Line::from(vec![
+                        Span::raw(i.get_name()).fg(PRIMARY_COLOR_RTT),
+                        Span::raw(" - "),
+                        Span::raw(i.get_departure()).fg(SECUNDARY_COLOR_RTT),
+                        Span::raw(" -> "),
+                        Span::raw(i.get_arrival()).fg(SECUNDARY_COLOR_RTT),
+                        Span::raw(" - "),
+                        Span::raw(i.get_cost()).fg(PRIMARY_COLOR_RTT),
+                    ]))
+                }).collect();
+
+            let outward_block = List::new(outward_list)
+                .block(Block::default().borders(Borders::ALL).title(Title::from("Outward Expeditions: ")))
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+                .highlight_symbol("->  ");
+
+            let return_block = List::new(return_list)
+                .block(Block::default().borders(Borders::ALL).title(Title::from("Return Expeditions: ")))
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+                .highlight_symbol("->  ");
+
+            frame.render_stateful_widget(outward_block, chunks[1], &mut self.expeditions.as_ref().unwrap().0.state.clone());
+            frame.render_stateful_widget(return_block, chunks[3], &mut self.expeditions.as_ref().unwrap().1.state.clone());
         }
         frame.render_widget(instructions_block, main_chunks[2]);
     }

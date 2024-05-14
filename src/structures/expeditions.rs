@@ -37,15 +37,16 @@ impl ExpeditionRequest {
     } 
 }
 
+#[derive(Clone)]
 pub struct Expedition {
     name: String,
     departure: String,
     arrival: String,
-    cost: u64,
+    cost: String,
 }
 
 impl Expedition {
-    pub fn new(name: String, departure: String, arrival: String, cost: u64) -> Self {
+    pub fn new(name: String, departure: String, arrival: String, cost: String) -> Self {
         Self {
             name,
             departure,
@@ -63,13 +64,7 @@ impl Expedition {
         let arrival_value = expedition_value["hora_llegada"].as_str()
             .ok_or_else(|| Error::Generic("Failed to get arrival value".to_string()))?.to_string();
         let cost = expedition_value["tarifa_basica"].as_u64()
-            .ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?;     
-        
-        println!("{} != {} != {} != {}", cost,
-            expedition_value["tarifa_basica"].as_i64().ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?,
-            expedition_value["tarifa_basica"].as_u64().ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?,
-            expedition_value["tarifa_basica"].as_f64().ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?
-        );
+            .ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))?;
 
         // Hora_Salida and Hora_Llegada are in the format "YYYY-MM-DDTHH:MM:00+02:00"
         // and we want to extract "HH:MM"
@@ -81,7 +76,23 @@ impl Expedition {
             .split(":").collect::<Vec<&str>>()[0..2].join(":");                 // "HH:MM"
     
     
-        Ok(Self::new(name, departure, arrival, cost))
+        Ok(Self::new(name, departure, arrival, format!("{:.2}", cost as f64 / 100.0)))
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_departure(&self) -> String {
+        self.departure.clone()
+    }
+
+    pub fn get_arrival(&self) -> String {
+        self.arrival.clone()
+    }
+
+    pub fn get_cost(&self) -> String {
+        self.cost.clone()
     }
 }
 
@@ -93,11 +104,11 @@ impl std::fmt::Debug for Expedition {
 
 impl std::fmt::Display for Expedition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\nLínea:     {}\nHorario:   {} -> {}\nCoste(€):  {:.2}",
+        write!(f, "\nLínea:     {}\nHorario:   {} -> {}\nCoste(€):  {}",
             self.name,
             self.departure,
             self.arrival,
-            self.cost as f64 / 100.0
+            self.cost
         )
     }
 }
@@ -120,7 +131,7 @@ pub fn deserialize_expeditions(value: Value) -> Result<(Vec<Expedition>, Vec<Exp
             Ok(expedition) => expedition,
             Err(err) => {
                 expedition_errors.1 = true;
-                Expedition::new("Error".to_string(), "Error".to_string(), "Error".to_string(), 0)
+                Expedition::new("Error".to_string(), "00:00".to_string(), "00:00".to_string(), "0.00".to_string())
             }
         }
     }).collect();
@@ -130,7 +141,7 @@ pub fn deserialize_expeditions(value: Value) -> Result<(Vec<Expedition>, Vec<Exp
             Ok(expedition) => expedition,
             Err(err) => {
                 expedition_errors.1 = true;
-                Expedition::new("Error".to_string(), "Error".to_string(), "Error".to_string(), 0)
+                Expedition::new("Error".to_string(), "00:00".to_string(), "00:00".to_string(), "0.00".to_string())
             }
         }
     }).collect();

@@ -20,9 +20,7 @@ impl Default for StatefulList<Stop> {
 }
 
 impl StatefulList<Stop> {
-    pub fn draw_stop_list() {
-
-    }
+    pub fn draw_stop_list() {}
 
     pub fn handle_events(&mut self, code: &KeyCode) -> Option<Stop> {
         match code {
@@ -37,26 +35,15 @@ impl StatefulList<Stop> {
 }
 
 impl StatefulList<Expedition> {
-    pub fn draw_stop_list() {
-
-    }
+    pub fn draw_stop_list() {}
     
     pub fn handle_events(&mut self, code: &KeyCode) -> Option<Expedition>  {
-        // match code {
-        //     KeyCode::Char('q') => app.exit = true,
-        //     KeyCode::Up => app.stops.previous(),
-        //     KeyCode::Down => app.stops.next(),
-        //     KeyCode::Enter => {
-        //         let selected_stop = app.stops.items.get(app.stops.state.selected().unwrap()).unwrap();
-        //         match app.desired_stops {
-        //             (None, None) => app.desired_stops.0 = Some(selected_stop.clone()),
-        //             (Some(_), None) => app.desired_stops.1 = Some(selected_stop.clone()),
-        //             (_) => {}
-        //         }
-        //     }
-        //     _ => {}
-        // }
-        println!("{:?}", code);
+        match code {
+            KeyCode::Up => self.previous(),
+            KeyCode::Down => self.next(),
+            _ => {}
+        }
+        
         None
     }
     
