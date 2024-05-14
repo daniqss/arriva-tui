@@ -53,14 +53,12 @@ impl Expedition {
     }
 
 
-    pub fn from(expeditions: &Value, expedition_direction: &str) -> Result<Self> {
-        let expedition_value = expeditions["expeditions"][expedition_direction].clone();
-
+    pub fn from(expedition_value: &Value) -> Result<Self> {
         let name = expedition_value["Descripcion_Web"].as_str()
             .ok_or_else(|| Error::Generic("Failed to get expedition name".to_string()))?.to_string();
-        let departure_value = expedition_value["Hora_Salida"].as_str()
+        let departure_value = expedition_value["hora_salida"].as_str()
             .ok_or_else(|| Error::Generic("Failed to get departure value".to_string()))?.to_string();
-        let arrival_value = expedition_value["Hora_Llegada"].as_str()
+        let arrival_value = expedition_value["hora_llegada"].as_str()
             .ok_or_else(|| Error::Generic("Failed to get arrival value".to_string()))?.to_string();
         let cost = expedition_value["tarifa_basica"].as_u64()
             .ok_or_else(|| Error::Generic("Failed to get cost value".to_string()))? as usize;     
@@ -78,29 +76,44 @@ impl Expedition {
         Ok(Self::new(name, departure, arrival, cost))
     }
 }
-pub fn deserialize_expeditions(value: Value) -> Result<(Vec<Expedition>, Vec<Expedition>)> {
-    println!("outward: {:?}", value["expediciones"][OUTWARD_STR]);
-    let outward_expeditions = value["expediciones"][OUTWARD_STR].as_array()
-        .ok_or_else(|| Error::Generic("Failed to get outward expeditions".to_string()))?;
-        
-    let return_expeditions = value["expediciones"][RETURN_STR].as_array()
-        .ok_or_else(|| Error::Generic("Failed to get return expeditions".to_string()))?;
-        
 
+impl std::fmt::Debug for Expedition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {} - {} - {}", self.name, self.departure, self.arrival, self.cost)
+    }
+}
+
+impl std::fmt::Display for Expedition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\nLínea:     {}\nHorario:   {} -> {}\nCoste(€):  {}", self.name, self.departure, self.arrival, self.cost)
+    }
+}
+
+pub fn deserialize_expeditions(value: Value) -> Result<(Vec<Expedition>, Vec<Expedition>)> {
     let mut expedition_errors: (bool, bool) = (false, false);
 
-    let outward_expeditions = outward_expeditions.iter().map(|expedition| {
-        match Expedition::from(expedition, OUTWARD_STR) {
+    let outward_expeditions_value = match value["expediciones"][OUTWARD_STR].as_array() {
+        Some(expeditions) => expeditions,
+        None => return Err(Error::Generic("Failed to parse outward expeditions".to_string()))
+    };
+
+    let return_expeditions_value = match value["expediciones"][RETURN_STR].as_array() {
+        Some(expeditions) => expeditions,
+        None => return Err(Error::Generic("Failed to parse return expeditions".to_string()))
+    };
+
+    let outward_expeditions: Vec<Expedition> = outward_expeditions_value.iter().map(|expedition| {
+        match Expedition::from(expedition) {
             Ok(expedition) => expedition,
             Err(err) => {
-                expedition_errors.0 = true;
+                expedition_errors.1 = true;
                 Expedition::new("Error".to_string(), "Error".to_string(), "Error".to_string(), 0)
             }
         }
     }).collect();
 
-    let return_expeditions = return_expeditions.iter().map(|expedition| {
-        match Expedition::from(expedition, RETURN_STR) {
+    let return_expeditions = return_expeditions_value.iter().map(|expedition| {
+        match Expedition::from(expedition) {
             Ok(expedition) => expedition,
             Err(err) => {
                 expedition_errors.1 = true;

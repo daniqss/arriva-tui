@@ -157,6 +157,14 @@ mod tests {
             Err(err) => panic!("Error deserializing expeditions: \n {:?}", err),
         };
 
-        // println!("Expeditions: {:?}", expeditions_value["expediciones"]["ida"][0]);
+        println!("Outward expeditions:");
+        for expedition in expeditions.0 {
+            println!("{}", expedition);
+        }
+
+        println!("\nReturn expeditions:");
+        for expedition in expeditions.1 {
+            println!("{}", expedition);
+        }
     }
 }
