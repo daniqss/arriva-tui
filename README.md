@@ -17,3 +17,4 @@ cargo run --release
 - [ ] Show the selected expedition details
 - [ ] Separate the different UI elements in components
 - [ ] Add ui test and github actions
+- [ ] Add search for stops using non-blocking keyboard io 
