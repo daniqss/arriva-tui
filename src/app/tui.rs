@@ -1,8 +1,11 @@
 use std::io::{self, stdout, Stdout};
 
-use crossterm::{execute, terminal::{self, *}};
-use ratatui::prelude::*;
 use crate::prelude::*;
+use crossterm::{
+    execute,
+    terminal::{self, *},
+};
+use ratatui::prelude::*;
 
 pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 

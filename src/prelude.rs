@@ -11,4 +11,3 @@ pub const ERROR_COLOR_TC: termcolor::Color = termcolor::Color::Rgb(255, 0, 0);
 pub const ERROR_COLOR_RTT: ratatui::style::Color = ratatui::style::Color::Rgb(255, 0, 0);
 pub const BG_COLOR_TC: termcolor::Color = termcolor::Color::Rgb(0, 0, 0);
 pub const BG_COLOR_RTT: ratatui::style::Color = ratatui::style::Color::Rgb(0, 0, 0);
-

@@ -11,5 +11,5 @@ pub enum Error {
     SerdeJson(#[from] serde_json::Error),
 
     #[error(transparent)]
-    Io(#[from] std::io::Error)    
+    Io(#[from] std::io::Error),
 }

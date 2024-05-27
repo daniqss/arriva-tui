@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use crossterm::event::{self, KeyCode};
 use ratatui::widgets::ListState;
-use crate::prelude::*;
 
 use crate::App;
 
@@ -26,7 +26,14 @@ impl StatefulList<Stop> {
         match code {
             KeyCode::Up => self.previous(),
             KeyCode::Down => self.next(),
-            KeyCode::Enter => return Some(self.items.get(self.state.selected().unwrap()).unwrap().clone()),
+            KeyCode::Enter => {
+                return Some(
+                    self.items
+                        .get(self.state.selected().unwrap())
+                        .unwrap()
+                        .clone(),
+                )
+            }
             _ => {}
         };
 
@@ -36,17 +43,16 @@ impl StatefulList<Stop> {
 
 impl StatefulList<Expedition> {
     pub fn draw_stop_list() {}
-    
-    pub fn handle_events(&mut self, code: &KeyCode) -> Option<Expedition>  {
+
+    pub fn handle_events(&mut self, code: &KeyCode) -> Option<Expedition> {
         match code {
             KeyCode::Up => self.previous(),
             KeyCode::Down => self.next(),
             _ => {}
         }
-        
+
         None
     }
-    
 }
 
 impl<T> StatefulList<T> {

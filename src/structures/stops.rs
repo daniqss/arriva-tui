@@ -17,11 +17,20 @@ pub struct Stop {
     #[serde(default)]
     latitud: Option<f64>,
     #[serde(default)]
-    longitud:Option<f64>
+    longitud: Option<f64>,
 }
 
 impl Stop {
-    pub fn new(parada: usize, nombre: String, nom_web: String, peso: isize, lat: Option<f64>, lon: Option<f64>, latitud: Option<f64>, longitud: Option<f64>) -> Self {
+    pub fn new(
+        parada: usize,
+        nombre: String,
+        nom_web: String,
+        peso: isize,
+        lat: Option<f64>,
+        lon: Option<f64>,
+        latitud: Option<f64>,
+        longitud: Option<f64>,
+    ) -> Self {
         Self {
             parada,
             nombre,
@@ -45,7 +54,9 @@ impl Stop {
 
 impl Debug for Stop {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "\nStop: {} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{}",
+        write!(
+            f,
+            "\nStop: {} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{} \n\t{}",
             self.parada,
             self.nombre,
             self.nom_web,
@@ -60,7 +71,9 @@ impl Debug for Stop {
 
 impl Display for Stop {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f,"\nParada: {}\nNombre: {}\nLatitud: {}\nLongitud: {}\n",
+        write!(
+            f,
+            "\nParada: {}\nNombre: {}\nLatitud: {}\nLongitud: {}\n",
             self.parada,
             self.nom_web,
             self.format_option_f64(&self.latitud),
@@ -78,7 +91,7 @@ impl Stop {
         }
     }
 }
-    
+
 #[derive(Deserialize, Debug)]
 struct StopList {
     paradas: Vec<Stop>,
@@ -88,4 +101,3 @@ pub fn deserialize_stops(response: String) -> Result<Vec<Stop>, Error> {
     let stop_list: StopList = serde_json::from_str(&response)?;
     Ok(stop_list.paradas)
 }
-
